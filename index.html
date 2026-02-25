@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skin Lesion Classification - AI-Powered Dermatology Assistant</title>
+    
+    <!-- CSS Dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.1);
+            z-index: 1;
+        }
+
+        .hero-section .container {
+            position: relative;
+            z-index: 2;
+        }
+
+        .medical-illustration {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            transition: width 0.5s ease;
+        }
+
+        .confidence-high { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+        .confidence-moderate { background: linear-gradient(90deg, #f39c12, #e67e22); }
+        .confidence-low { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+
+        .result-card {
+            margin: 20px 0;
+            border-left: 5px solid;
+        }
+
+        .result-benign {
+            border-left-color: var(--success-color);
+        }
+
+        .result-malignant {
+            border-left-color: var(--danger-color);
+        }
+
+        .history-table th {
+            background-color: var(--light-bg);
+            font-weight: 600;
+            border: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .btn-lg {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+        }
+
+        .progress {
+            background-color: #e9ecef;
+        }
+
+        #camera-container video,
+        #camera-container canvas {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        #camera-placeholder {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #ced4da;
+        }
+
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .modal-header {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <i class="fas fa-microscope me-2"></i>
+                <span>SkinLesion AI</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#home">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#upload">Upload Image</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#camera">Camera Capture</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#history">History</a>
+                    </li>
+                </ul>
+                
+                <div class="navbar-nav">
+                    <div id="auth-section">
+                        <button class="btn btn-outline-light me-2" onclick="showLoginModal()">
+                            <i class="fas fa-sign-in-alt me-1"></i>Login
+                        </button>
+                        <button class="btn btn-light" onclick="showRegisterModal()">
+                            <i class="fas fa-user-plus me-1"></i>Register
+                        </button>
+                    </div>
+                    <div id="user-section" style="display: none;">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i><span id="username-display"></span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="showProfile()">
+                                    <i class="fas fa-user-cog me-2"></i>Profile
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="logout()">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section">
+        <div class="container">
+            <div class="row align-items-center min-vh-50">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold text-white mb-4">
+                        AI-Powered Skin Lesion Classification
+                    </h1>
+                    <p class="lead mb-4">
+                        Get instant analysis of skin lesions using advanced machine learning. 
+                        Our system helps detect potentially malignant lesions early, supporting 
+                        better healthcare outcomes.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <button class="btn btn-light btn-lg" onclick="scrollToSection('upload')">
+                            <i class="fas fa-upload me-2"></i>Upload Image
+                        </button>
+                        <button class="btn btn-outline-light btn-lg" onclick="scrollToSection('camera')">
+                            <i class="fas fa-camera me-2"></i>Use Camera
+                        </button>
+                    </div>
+                    
+                    <!-- Key Features -->
+                    <div class="row mt-5">
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-brain text-light me-2"></i>
+                                <small class="text-light">AI-Powered Analysis</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-shield-alt text-light me-2"></i>
+                                <small class="text-light">Secure & Private</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-clock text-light me-2"></i>
+                                <small class="text-light">Instant Results</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="hero-image text-center">
+                        <div class="medical-illustration">
+                            <i class="fas fa-brain text-white mb-3" style="font-size: 120px;"></i>
+                            <div class="d-flex justify-content-center gap-4 mb-3">
+                                <i class="fas fa-microscope text-white" style="font-size: 60px;"></i>
+                                <i class="fas fa-user-md text-white" style="font-size: 60px;"></i>
+                                <i class="fas fa-heartbeat text-white" style="font-size: 60px;"></i>
+                            </div>
+                            <p class="text-white lead">AI-Powered Medical Analysis</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Section -->
+    <section id="upload" class="py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <div class="card shadow-lg border-0">
+                        <div class="card-header bg-primary text-white">
+                            <h3 class="card-title mb-0">
+                                <i class="fas fa-upload me-2"></i>Upload Skin Lesion Image
+                            </h3>
+                        </div>
+                        <div class="card-body p-4">
+                            <div id="upload-form">
+                                <div class="mb-4">
+                                    <label for="imageFile" class="form-label">Select Image File</label>
+                                    <input type="file" class="form-control form-control-lg" id="imageFile" 
+                                           accept="image/*" onchange="previewImage(this)">
+                                    <div class="form-text">
+                                        Supported formats: JPG, PNG, WebP. Max size: 10MB
+                                    </div>
+                                </div>
+                                
+                                <div id="image-preview" class="mb-4" style="display: none;">
+                                    <h5>Preview:</h5>
+                                    <img id="preview-img" src="" alt="Preview" class="img-fluid rounded shadow" 
+                                         style="max-height: 300px;">
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-primary btn-lg" onclick="uploadImage()" id="analyze-btn">
+                                        <i class="fas fa-brain me-2"></i>Analyze Image
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Loading State -->
+                            <div id="upload-loading" style="display: none;" class="text-center py-4">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Analyzing...</span>
+                                </div>
+                                <p class="text-muted">Analyzing image with AI model...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Camera Section -->
+    <section id="camera" class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-10 mx-auto">
+                    <div class="card shadow-lg border-0">
+                        <div class="card-header bg-success text-white">
+                            <h3 class="card-title mb-0">
+                                <i class="fas fa-camera me-2"></i>Camera Capture
+                            </h3>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <div class="col-lg-8">
+                                    <div id="camera-container">
+                                        <video id="camera-video" class="w-100 rounded shadow" style="display: none;" autoplay playsinline></video>
+                                        <canvas id="camera-canvas" class="w-100 rounded shadow" style="display: none;"></canvas>
+                                        <div id="camera-placeholder" class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                             style="height: 400px;">
+                                            <div class="text-center">
+                                                <i class="fas fa-camera fa-3x text-muted mb-3"></i>
+                                                <p class="text-muted">Click "Start Camera" to begin</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-lg-4">
+                                    <div class="d-grid gap-3">
+                                        <button type="button" class="btn btn-success btn-lg" id="start-camera" onclick="startCamera()">
+                                            <i class="fas fa-video me-2"></i>Start Camera
+                                        </button>
+                                        <button type="button" class="btn btn-primary btn-lg" id="capture-image" 
+                                                onclick="captureImage()" style="display: none;">
+                                            <i class="fas fa-camera me-2"></i>Capture
+                                        </button>
+                                        <button type="button" class="btn btn-secondary btn-lg" id="retake-image" 
+                                                onclick="retakeImage()" style="display: none;">
+                                            <i class="fas fa-redo me-2"></i>Retake
+                                        </button>
+                                        <button type="button" class="btn btn-warning btn-lg" id="analyze-capture" 
+                                                onclick="analyzeCapture()" style="display: none;">
+                                            <i class="fas fa-brain me-2"></i>Analyze
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <h6>Camera Tips:</h6>
+                                        <ul class="list-unstyled small text-muted">
+                                            <li><i class="fas fa-check me-1 text-success"></i> Good lighting</li>
+                                            <li><i class="fas fa-check me-1 text-success"></i> Focus on lesion</li>
+                                            <li><i class="fas fa-check me-1 text-success"></i> Stable position</li>
+                                            <li><i class="fas fa-check me-1 text-success"></i> Close proximity</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results" class="py-5 bg-light" style="display: none;">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-10 mx-auto">
+                    <div class="card shadow-lg border-0">
+                        <div class="card-header">
+                            <h3 class="card-title mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>Analysis Results
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="results-content">
+                                <!-- Results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- History Section -->
+    <section id="history" class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow-lg border-0">
+                        <div class="card-header bg-info text-white">
+                            <h3 class="card-title mb-0">
+                                <i class="fas fa-history me-2"></i>Analysis History
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="history-content">
+                                <div class="text-center py-4">
+                                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No analysis history yet. Upload an image to get started!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="login-form">
+                        <div class="mb-3">
+                            <label for="login-username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="login-username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="login-password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="login-password" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="login()">Login</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Register</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="register-form">
+                        <div class="mb-3">
+                            <label for="reg-username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="reg-username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reg-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="reg-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reg-fullname" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="reg-fullname">
+                        </div>
+                        <div class="mb-3">
+                            <label for="reg-password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="reg-password" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="register()">Register</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <!-- Toasts will be inserted here -->
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Skin Lesion Classification AI</h6>
+                    <p class="small text-muted">
+                        This tool is for educational and screening purposes only. 
+                        Always consult a healthcare professional for medical diagnosis.
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <small class="text-muted">
+                        © 2024 SkinLesion AI. All rights reserved.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Main Application Class
+        class SkinLesionApp {
+            constructor() {
+                this.apiBaseUrl = window.location.origin;
+                this.authToken = null;
+                this.currentUser = null;
+                this.predictions = [];
+                
+                this.init();
+            }
+            
+            async init() {
+                this.initializeUI();
+                this.setupEventListeners();
+                this.setupCameraHandler();
+                this.setupAuthManager();
+            }
+            
+            initializeUI() {
+                // Check for existing auth token
+                const token = localStorage.getItem('authToken');
+                if (token) {
+                    this.authToken = token;
+                    this.checkAuthStatus();
+                }
+            }
+            
+            setupEventListeners() {
+                // File input change listener
+                const fileInput = document.getElementById('imageFile');
+                if (fileInput) {
+                    fileInput.addEventListener('change', (e) => this.previewImage(e.target));
+                }
+                
+                // Navigation smooth scrolling
+                document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                    anchor.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        const target = document.querySelector(this.getAttribute('href'));
+                        if (target) {
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    });
+                });
+            }
+            
+            setupCameraHandler() {
+                this.camera = new CameraHandler(this);
+            }
+            
+            setupAuthManager() {
+                this.auth = new AuthManager(this);
+            }
+            
+            async checkAuthStatus() {
+                try {
+                    if (!this.authToken) return false;
+                    
+                    // Mock successful auth check for demo
+                    this.showUserSection();
+                    return true;
+                } catch (error) {
+                    console.error('Auth check failed:', error);
+                    this.logout();
+                    return false;
+                }
+            }
+            
+            showAuthSection() {
+                const authSection = document.getElementById('auth-section');
+                const userSection = document.getElementById('user-section');
+                
+                if (authSection) authSection.style.display = 'block';
+                if (userSection) userSection.style.display = 'none';
+            }
+            
+            showUserSection() {
+                const authSection = document.getElementById('auth-section');
+                const userSection = document.getElementById('user-section');
+                const usernameDisplay = document.getElementById('username-display');
+                
+                if (authSection) authSection.style.display = 'none';
+                if (userSection) userSection.style.display = 'block';
+                
+                if (usernameDisplay && this.currentUser) {
+                    usernameDisplay.textContent = this.currentUser.username;
+                }
+            }
+            
+            previewImage(input) {
+                const preview = document.getElementById('image-preview');
+                const previewImg = document.getElementById('preview-img');
+                
+                if (input.files && input.files[0]) {
+                    const file = input.files[0];
+                    
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        this.showToast('Please select a valid image file', 'error');
+                        return;
+                    }
+                    
+                    // Validate file size (10MB max)
+                    if (file.size > 10 * 1024 * 1024) {
+                        this.showToast('File size must be less than 10MB', 'error');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        previewImg.src = e.target.result;
+                        preview.style.display = 'block';
+                        preview.classList.add('fade-in');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+            
+            async uploadImage() {
+                const fileInput = document.getElementById('imageFile');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    this.showToast('Please select an image first', 'error');
+                    return;
+                }
+                
+                // Show loading state
+                this.showLoadingState(true);
+                
+                try {
+                    // Mock API call for demo - replace with your actual API endpoint
+                    await this.simulateAnalysis();
+                    
+                    // Create mock result
+                    const result = {
+                        prediction: Math.random() > 0.5 ? 'benign' : 'potentially_concerning',
+                        confidence: 0.75 + Math.random() * 0.2,
+                        probabilities: {
+                            benign: 0.65 + Math.random() * 0.2,
+                            malignant: 0.35 - Math.random() * 0.2
+                        },
+                        hf_analysis: "AI analysis has been completed. The image shows characteristics that have been processed by the machine learning model. Professional medical evaluation is recommended for accurate diagnosis.",
+                        model_type: "Vision Transformer",
+                        processing_time: 2.3 + Math.random() * 2,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // Normalize probabilities
+                    const total = result.probabilities.benign + result.probabilities.malignant;
+                    result.probabilities.benign /= total;
+                    result.probabilities.malignant /= total;
+                    
+                    this.displayResults(result);
+                    this.addToHistory(result, file.name);
+                    
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    this.showToast(`Error: ${error.message}`, 'error');
+                } finally {
+                    this.showLoadingState(false);
+                }
+            }
+            
+            async simulateAnalysis() {
+                // Simulate API delay
+                return new Promise(resolve => {
+                    setTimeout(resolve, 2000 + Math.random() * 3000);
+                });
+            }
+            
+            displayResults(result) {
+                const resultsSection = document.getElementById('results');
+                const resultsContent = document.getElementById('results-content');
+                
+                if (!resultsSection || !resultsContent) return;
+                
+                // Handle different prediction types
+                let isPredictionMalignant = false;
+                let displayPrediction = result.prediction;
+                
+                if (result.prediction === 'potentially_concerning') {
+                    isPredictionMalignant = true;
+                    displayPrediction = 'Potentially Concerning';
+                } else if (result.prediction === 'malignant') {
+                    isPredictionMalignant = true;
+                    displayPrediction = 'Malignant';
+                } else if (result.prediction === 'benign') {
+                    isPredictionMalignant = false;
+                    displayPrediction = 'Benign';
+                } else {
+                    isPredictionMalignant = false;
+                    displayPrediction = 'Uncertain';
+                }
+                
+                const confidenceLevel = this.getConfidenceLevel(result.confidence);
+                const riskInfo = this.calculateRiskLevel(result.prediction, result.confidence);
+                
+                const resultsHTML = `
+                    <div class="result-card card ${isPredictionMalignant ? 'result-malignant' : 'result-benign'} fade-in">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h4 class="mb-3">
+                                        <i class="fas ${isPredictionMalignant ? 'fa-exclamation-triangle text-danger' : 'fa-check-circle text-success'} me-2"></i>
+                                        Analysis: ${displayPrediction}
+                                    </h4>
+                                    
+                                    <div class="mb-3">
+                                        <h6>Confidence Level</h6>
+                                        <div class="confidence-bar">
+                                            <div class="confidence-fill confidence-${confidenceLevel.class}" 
+                                                 style="width: ${result.confidence * 100}%">
+                                                ${(result.confidence * 100).toFixed(1)}%
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">${confidenceLevel.text}</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <h6>Risk Assessment</h6>
+                                        <div class="alert alert-${riskInfo.alertClass} py-2">
+                                            <strong>${riskInfo.level}</strong><br>
+                                            <small>${riskInfo.recommendation}</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <div class="border rounded p-3">
+                                                <h6 class="text-success mb-1">Benign/Normal</h6>
+                                                <strong>${(result.probabilities.benign * 100).toFixed(1)}%</strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="border rounded p-3">
+                                                <h6 class="text-danger mb-1">Concerning</h6>
+                                                <strong>${(result.probabilities.malignant * 100).toFixed(1)}%</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    ${result.hf_analysis ? `
+                                        <div class="card bg-light">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-robot me-2"></i>AI Analysis
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p class="small mb-0">${result.hf_analysis}</p>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    <div class="mt-3">
+                                        <h6>Technical Details</h6>
+                                        <ul class="list-unstyled small text-muted">
+                                            <li><strong>Model:</strong> ${result.model_type || 'Vision Transformer'}</li>
+                                            <li><strong>Processing Time:</strong> ${result.processing_time ? result.processing_time.toFixed(2) + 's' : 'N/A'}</li>
+                                            <li><strong>Analysis Date:</strong> ${new Date(result.timestamp || Date.now()).toLocaleString()}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning fade-in">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <div>
+                                <strong>Important Disclaimer:</strong> This AI analysis is for educational and screening purposes only. 
+                                Always consult with a qualified healthcare professional for proper medical diagnosis and treatment.
+                                This tool should not replace professional medical advice.
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                resultsContent.innerHTML = resultsHTML;
+                resultsSection.style.display = 'block';
+                
+                // Scroll to results
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            getConfidenceLevel(confidence) {
+                if (confidence >= 0.9) {
+                    return { class: 'high', text: 'Very High Confidence' };
+                } else if (confidence >= 0.8) {
+                    return { class: 'high', text: 'High Confidence' };
+                } else if (confidence >= 0.6) {
+                    return { class: 'moderate', text: 'Moderate Confidence' };
+                } else {
+                    return { class: 'low', text: 'Low Confidence' };
+                }
+            }
+            
+            calculateRiskLevel(prediction, confidence) {
+                const isConcerning = prediction === 'malignant' || prediction === 'potentially_concerning';
+                
+                if (isConcerning) {
+                    if (confidence >= 0.8) {
+                        return {
+                            level: 'High Priority - Professional Evaluation Recommended',
+                            recommendation: 'Please schedule an appointment with a dermatologist promptly',
+                            alertClass: 'danger'
+                        };
+                    } else if (confidence >= 0.6) {
+                        return {
+                            level: 'Moderate Priority - Monitor Closely',
+                            recommendation: 'Consider professional evaluation and monitor for changes',
+                            alertClass: 'warning'
+                        };
+                    } else {
+                        return {
+                            level: 'Uncertain - Caution Advised',
+                            recommendation: 'Professional evaluation recommended for proper diagnosis',
+                            alertClass: 'warning'
+                        };
+                    }
+                } else {
+                    if (confidence >= 0.8) {
+                        return {
+                            level: 'Low Concern',
+                            recommendation: 'Continue regular skin monitoring and routine check-ups',
+                            alertClass: 'success'
+                        };
+                    } else if (confidence >= 0.6) {
+                        return {
+                            level: 'Monitor and Track',
+                            recommendation: 'Keep watching for changes and maintain regular check-ups',
+                            alertClass: 'info'
+                        };
+                    } else {
+                        return {
+                            level: 'Uncertain Analysis',
+                            recommendation: 'Professional evaluation recommended for accurate diagnosis',
+                            alertClass: 'secondary'
+                        };
+                    }
+                }
+            }
+            
+            addToHistory(result, filename) {
+                const historyItem = {
+                    id: Date.now(),
+                    filename: filename,
+                    prediction: result.prediction,
+                    confidence: result.confidence,
+                    timestamp: result.timestamp,
+                    probabilities: result.probabilities
+                };
+                
+                this.predictions.unshift(historyItem);
+                this.displayHistory();
+            }
+            
+            displayHistory() {
+                const historyContent = document.getElementById('history-content');
+                if (!historyContent) return;
+                
+                if (this.predictions.length === 0) {
+                    historyContent.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No analysis history yet. Upload an image to get started!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const historyHTML = `
+                    <div class="table-responsive">
+                        <table class="table history-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Image</th>
+                                    <th>Prediction</th>
+                                    <th>Confidence</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${this.predictions.map(pred => {
+                                    let badgeClass = 'secondary';
+                                    let displayPred = pred.prediction;
+                                    
+                                    if (pred.prediction === 'malignant' || pred.prediction === 'potentially_concerning') {
+                                        badgeClass = 'danger';
+                                        displayPred = pred.prediction === 'malignant' ? 'Malignant' : 'Potentially Concerning';
+                                    } else if (pred.prediction === 'benign') {
+                                        badgeClass = 'success';
+                                        displayPred = 'Benign';
+                                    }
+                                    
+                                    return `
+                                        <tr>
+                                            <td>${new Date(pred.timestamp).toLocaleDateString()}</td>
+                                            <td><span class="small text-muted">${pred.filename}</span></td>
+                                            <td>
+                                                <span class="badge bg-${badgeClass}">
+                                                    ${displayPred}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar ${pred.confidence > 0.8 ? 'bg-success' : pred.confidence > 0.6 ? 'bg-warning' : 'bg-danger'}" 
+                                                         style="width: ${pred.confidence * 100}%">
+                                                        ${(pred.confidence * 100).toFixed(1)}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="app.viewPredictionDetails('${pred.id}')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                historyContent.innerHTML = historyHTML;
+            }
+            
+            showLoadingState(show) {
+                const uploadForm = document.getElementById('upload-form');
+                const uploadLoading = document.getElementById('upload-loading');
+                
+                if (show) {
+                    if (uploadForm) uploadForm.style.display = 'none';
+                    if (uploadLoading) uploadLoading.style.display = 'block';
+                } else {
+                    if (uploadForm) uploadForm.style.display = 'block';
+                    if (uploadLoading) uploadLoading.style.display = 'none';
+                }
+            }
+            
+            showToast(message, type = 'info') {
+                const toastContainer = document.querySelector('.toast-container');
+                if (!toastContainer) return;
+                
+                const toastId = 'toast-' + Date.now();
+                const toastHTML = `
+                    <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true">
+                        <div class="toast-header">
+                            <i class="fas fa-${this.getToastIcon(type)} me-2 text-${type === 'error' ? 'danger' : type}"></i>
+                            <strong class="me-auto">SkinLesion AI</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                    </div>
+                `;
+                
+                toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+                
+                const toastElement = document.getElementById(toastId);
+                if (window.bootstrap && bootstrap.Toast) {
+                    const toast = new bootstrap.Toast(toastElement);
+                    toast.show();
+                    
+                    toastElement.addEventListener('hidden.bs.toast', () => {
+                        toastElement.remove();
+                    });
+                } else {
+                    setTimeout(() => {
+                        toastElement.remove();
+                    }, 5000);
+                }
+            }
+            
+            getToastIcon(type) {
+                switch (type) {
+                    case 'success': return 'check-circle';
+                    case 'error': return 'exclamation-circle';
+                    case 'warning': return 'exclamation-triangle';
+                    default: return 'info-circle';
+                }
+            }
+            
+            logout() {
+                this.authToken = null;
+                this.currentUser = null;
+                localStorage.removeItem('authToken');
+                this.showAuthSection();
+                this.predictions = [];
+                this.displayHistory();
+                this.showToast('Logged out successfully', 'success');
+            }
+            
+            scrollToSection(sectionId) {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+            
+            viewPredictionDetails(predictionId) {
+                this.showToast('Prediction details feature coming soon!', 'info');
+            }
+        }
+
+        // Camera Handler Class
+        class CameraHandler {
+            constructor(app) {
+                this.app = app;
+                this.video = null;
+                this.canvas = null;
+                this.stream = null;
+                this.capturedImageBlob = null;
+                
+                this.init();
+            }
+            
+            init() {
+                this.video = document.getElementById('camera-video');
+                this.canvas = document.getElementById('camera-canvas');
+                
+                // Check camera support
+                if (!this.isCameraSupported()) {
+                    this.showCameraNotSupported();
+                }
+            }
+            
+            async startCamera() {
+                try {
+                    const constraints = {
+                        video: {
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 },
+                            facingMode: 'environment'
+                        }
+                    };
+                    
+                    this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    
+                    this.video.srcObject = this.stream;
+                    this.video.style.display = 'block';
+                    this.canvas.style.display = 'none';
+                    
+                    const placeholder = document.getElementById('camera-placeholder');
+                    const startButton = document.getElementById('start-camera');
+                    const captureButton = document.getElementById('capture-image');
+                    
+                    if (placeholder) placeholder.style.display = 'none';
+                    if (startButton) startButton.style.display = 'none';
+                    if (captureButton) captureButton.style.display = 'block';
+                    
+                    this.app.showToast('Camera started successfully!', 'success');
+                    
+                } catch (error) {
+                    console.error('Camera access error:', error);
+                    this.handleCameraError(error);
+                }
+            }
+            
+            captureImage() {
+                if (!this.video || !this.canvas) return;
+                
+                try {
+                    const context = this.canvas.getContext('2d');
+                    this.canvas.width = this.video.videoWidth;
+                    this.canvas.height = this.video.videoHeight;
+                    
+                    context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+                    
+                    this.canvas.toBlob((blob) => {
+                        this.capturedImageBlob = blob;
+                        
+                        this.video.style.display = 'none';
+                        this.canvas.style.display = 'block';
+                        
+                        const captureButton = document.getElementById('capture-image');
+                        const retakeButton = document.getElementById('retake-image');
+                        const analyzeButton = document.getElementById('analyze-capture');
+                        
+                        if (captureButton) captureButton.style.display = 'none';
+                        if (retakeButton) retakeButton.style.display = 'block';
+                        if (analyzeButton) analyzeButton.style.display = 'block';
+                        
+                        this.app.showToast('Image captured!', 'success');
+                        
+                    }, 'image/jpeg', 0.9);
+                    
+                } catch (error) {
+                    console.error('Capture error:', error);
+                    this.app.showToast('Failed to capture image', 'error');
+                }
+            }
+            
+            retakeImage() {
+                this.video.style.display = 'block';
+                this.canvas.style.display = 'none';
+                
+                const captureButton = document.getElementById('capture-image');
+                const retakeButton = document.getElementById('retake-image');
+                const analyzeButton = document.getElementById('analyze-capture');
+                
+                if (captureButton) captureButton.style.display = 'block';
+                if (retakeButton) retakeButton.style.display = 'none';
+                if (analyzeButton) analyzeButton.style.display = 'none';
+                
+                this.capturedImageBlob = null;
+            }
+            
+            async analyzeCapture() {
+                if (!this.capturedImageBlob) {
+                    this.app.showToast('No image captured', 'error');
+                    return;
+                }
+                
+                try {
+                    this.showAnalysisLoading(true);
+                    
+                    // Simulate analysis
+                    await this.app.simulateAnalysis();
+                    
+                    const result = {
+                        prediction: Math.random() > 0.5 ? 'benign' : 'potentially_concerning',
+                        confidence: 0.75 + Math.random() * 0.2,
+                        probabilities: {
+                            benign: 0.65 + Math.random() * 0.2,
+                            malignant: 0.35 - Math.random() * 0.2
+                        },
+                        hf_analysis: "Camera capture analysis completed. Professional evaluation recommended for accurate diagnosis.",
+                        model_type: "Vision Transformer",
+                        processing_time: 2.3 + Math.random() * 2,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // Normalize probabilities
+                    const total = result.probabilities.benign + result.probabilities.malignant;
+                    result.probabilities.benign /= total;
+                    result.probabilities.malignant /= total;
+                    
+                    this.app.displayResults(result);
+                    this.app.addToHistory(result, 'camera-capture.jpg');
+                    this.stopCamera();
+                    
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                    this.app.showToast(`Analysis failed: ${error.message}`, 'error');
+                } finally {
+                    this.showAnalysisLoading(false);
+                }
+            }
+            
+            stopCamera() {
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                    this.stream = null;
+                }
+                
+                this.video.style.display = 'none';
+                this.canvas.style.display = 'none';
+                
+                const placeholder = document.getElementById('camera-placeholder');
+                const startButton = document.getElementById('start-camera');
+                const captureButton = document.getElementById('capture-image');
+                const retakeButton = document.getElementById('retake-image');
+                const analyzeButton = document.getElementById('analyze-capture');
+                
+                if (placeholder) placeholder.style.display = 'flex';
+                if (startButton) startButton.style.display = 'block';
+                if (captureButton) captureButton.style.display = 'none';
+                if (retakeButton) retakeButton.style.display = 'none';
+                if (analyzeButton) analyzeButton.style.display = 'none';
+                
+                this.capturedImageBlob = null;
+            }
+            
+            handleCameraError(error) {
+                let message = 'Camera access failed';
+                
+                if (error.name === 'NotAllowedError') {
+                    message = 'Camera permission denied. Please allow camera access and try again.';
+                } else if (error.name === 'NotFoundError') {
+                    message = 'No camera found. Please ensure your device has a camera.';
+                }
+                
+                this.app.showToast(message, 'error');
+                this.showCameraNotSupported();
+            }
+            
+            showCameraNotSupported() {
+                const placeholder = document.getElementById('camera-placeholder');
+                if (placeholder) {
+                    placeholder.innerHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                            <p class="text-muted">Camera not available</p>
+                            <p class="small text-muted">Please use the image upload feature instead.</p>
+                        </div>
+                    `;
+                }
+                
+                const startButton = document.getElementById('start-camera');
+                if (startButton) {
+                    startButton.style.display = 'none';
+                }
+            }
+            
+            showAnalysisLoading(show) {
+                const analyzeButton = document.getElementById('analyze-capture');
+                
+                if (show && analyzeButton) {
+                    analyzeButton.innerHTML = `
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Analyzing...
+                    `;
+                    analyzeButton.disabled = true;
+                } else if (analyzeButton) {
+                    analyzeButton.innerHTML = `
+                        <i class="fas fa-brain me-2"></i>Analyze
+                    `;
+                    analyzeButton.disabled = false;
+                }
+            }
+            
+            isCameraSupported() {
+                return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+            }
+        }
+
+        // Auth Manager Class
+        class AuthManager {
+            constructor(app) {
+                this.app = app;
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                // Form submissions
+                const loginForm = document.getElementById('login-form');
+                const registerForm = document.getElementById('register-form');
+                
+                if (loginForm) {
+                    loginForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.login();
+                    });
+                }
+                
+                if (registerForm) {
+                    registerForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.register();
+                    });
+                }
+            }
+            
+            async login() {
+                const username = document.getElementById('login-username').value.trim();
+                const password = document.getElementById('login-password').value;
+                
+                if (!username || !password) {
+                    this.app.showToast('Please fill in all fields', 'error');
+                    return;
+                }
+                
+                try {
+                    this.showLoginLoading(true);
+                    
+                    // Simulate login for demo
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // Mock successful login
+                    const mockUser = { username: username, id: '123', email: 'user@example.com' };
+                    const mockToken = 'demo-token-' + Date.now();
+                    
+                    localStorage.setItem('authToken', mockToken);
+                    
+                    this.app.authToken = mockToken;
+                    this.app.currentUser = mockUser;
+                    this.app.showUserSection();
+                    
+                    // Close modal
+                    const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                    if (loginModal) {
+                        loginModal.hide();
+                    }
+                    
+                    this.clearLoginForm();
+                    this.app.showToast(`Welcome back, ${username}!`, 'success');
+                    
+                } catch (error) {
+                    console.error('Login error:', error);
+                    this.app.showToast('Login failed. Please try again.', 'error');
+                } finally {
+                    this.showLoginLoading(false);
+                }
+            }
+            
+            async register() {
+                const username = document.getElementById('reg-username').value.trim();
+                const email = document.getElementById('reg-email').value.trim();
+                const fullname = document.getElementById('reg-fullname').value.trim();
+                const password = document.getElementById('reg-password').value;
+                
+                if (!username || !email || !password) {
+                    this.app.showToast('Please fill in all required fields', 'error');
+                    return;
+                }
+                
+                if (!this.isValidEmail(email)) {
+                    this.app.showToast('Please enter a valid email address', 'error');
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    this.app.showToast('Password must be at least 6 characters long', 'error');
+                    return;
+                }
+                
+                try {
+                    this.showRegisterLoading(true);
+                    
+                    // Simulate registration
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // Mock successful registration
+                    const mockUser = { username: username, id: '123', email: email, fullname: fullname };
+                    const mockToken = 'demo-token-' + Date.now();
+                    
+                    localStorage.setItem('authToken', mockToken);
+                    
+                    this.app.authToken = mockToken;
+                    this.app.currentUser = mockUser;
+                    this.app.showUserSection();
+                    
+                    // Close modal
+                    const registerModal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
+                    if (registerModal) {
+                        registerModal.hide();
+                    }
+                    
+                    this.clearRegisterForm();
+                    this.app.showToast(`Welcome, ${username}! Account created successfully.`, 'success');
+                    
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    this.app.showToast('Registration failed. Please try again.', 'error');
+                } finally {
+                    this.showRegisterLoading(false);
+                }
+            }
+            
+            showLoginLoading(show) {
+                const modal = document.getElementById('loginModal');
+                if (!modal) return;
+                
+                const submitButton = modal.querySelector('.modal-footer .btn-primary');
+                const formInputs = modal.querySelectorAll('input');
+                
+                if (show) {
+                    submitButton.innerHTML = `
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Logging in...
+                    `;
+                    submitButton.disabled = true;
+                    formInputs.forEach(input => input.disabled = true);
+                } else {
+                    submitButton.innerHTML = 'Login';
+                    submitButton.disabled = false;
+                    formInputs.forEach(input => input.disabled = false);
+                }
+            }
+            
+            showRegisterLoading(show) {
+                const modal = document.getElementById('registerModal');
+                if (!modal) return;
+                
+                const submitButton = modal.querySelector('.modal-footer .btn-primary');
+                const formInputs = modal.querySelectorAll('input');
+                
+                if (show) {
+                    submitButton.innerHTML = `
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Creating account...
+                    `;
+                    submitButton.disabled = true;
+                    formInputs.forEach(input => input.disabled = true);
+                } else {
+                    submitButton.innerHTML = 'Register';
+                    submitButton.disabled = false;
+                    formInputs.forEach(input => input.disabled = false);
+                }
+            }
+            
+            clearLoginForm() {
+                const usernameField = document.getElementById('login-username');
+                const passwordField = document.getElementById('login-password');
+                
+                if (usernameField) usernameField.value = '';
+                if (passwordField) passwordField.value = '';
+            }
+            
+            clearRegisterForm() {
+                const fields = ['reg-username', 'reg-email', 'reg-fullname', 'reg-password'];
+                fields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) field.value = '';
+                });
+            }
+            
+            isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+        }
+
+        // Global functions for HTML onclick handlers
+        function previewImage(input) {
+            if (window.app) window.app.previewImage(input);
+        }
+
+        function uploadImage() {
+            if (window.app) window.app.uploadImage();
+        }
+
+        function scrollToSection(sectionId) {
+            if (window.app) window.app.scrollToSection(sectionId);
+        }
+
+        function showLoginModal() {
+            const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
+        }
+
+        function showRegisterModal() {
+            const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+            registerModal.show();
+        }
+
+        function showProfile() {
+            if (window.app) window.app.showToast('Profile feature coming soon!', 'info');
+        }
+
+        function logout() {
+            if (window.app) window.app.logout();
+        }
+
+        function startCamera() {
+            if (window.app && window.app.camera) window.app.camera.startCamera();
+        }
+
+        function captureImage() {
+            if (window.app && window.app.camera) window.app.camera.captureImage();
+        }
+
+        function retakeImage() {
+            if (window.app && window.app.camera) window.app.camera.retakeImage();
+        }
+
+        function analyzeCapture() {
+            if (window.app && window.app.camera) window.app.camera.analyzeCapture();
+        }
+
+        function login() {
+            if (window.app && window.app.auth) window.app.auth.login();
+        }
+
+        function register() {
+            if (window.app && window.app.auth) window.app.auth.register();
+        }
+
+        // Initialize app when DOM is loaded
+        let app;
+        document.addEventListener('DOMContentLoaded', function() {
+            app = new SkinLesionApp();
+            window.app = app; // Make globally available
+        });
+    </script>
+</body>
+</html>
