@@ -1,0 +1,39 @@
+# Core FastAPI and server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Machine Learning and Image Processing
+torch==2.1.0
+torchvision==0.16.0
+pillow==10.0.1
+scikit-learn==1.3.2
+numpy==1.24.4
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.8  # For PostgreSQL (optional)
+
+# Authentication and Security
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.6
+
+# HTTP client for Hugging Face API
+httpx==0.25.2
+
+# Configuration and utilities
+python-dotenv==1.0.0
+tqdm==4.66.1
+
+# Data visualization (for training)
+matplotlib==3.8.2
+
+# Optional: For advanced image processing
+opencv-python==4.8.1.78
+
+# Optional: For better JSON handling
+orjson==3.9.10
+
+# Development tools (optional)
+pytest==7.4.3
+pytest-asyncio==0.21.1

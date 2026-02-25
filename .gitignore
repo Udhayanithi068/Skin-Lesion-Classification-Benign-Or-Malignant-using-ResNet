@@ -1,0 +1,185 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.tmp
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+log/
+
+# ML Models
+models/*.pth
+models/*.pkl
+models/*.h5
+models/*.onnx
+
+# Data
+data/
+dataset/
+datasets/
+
+# Uploads
+uploads/
+temp/
+cache/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Testing
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+# Documentation
+docs/_build/
+site/
+
+# Docker
+.dockerignore
+
+# Node modules (if any)
+node_modules/
+
+# MacOS
+.AppleDouble
+.LSOverride
+
+# Windows
+desktop.ini
+$RECYCLE.BIN/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# PyTorch specific
+*.pt
+*.pth
+checkpoint/
+checkpoints/
+
+# TensorBoard
+runs/
+tensorboard/
+
+# Media files (except examples)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+# But keep example/demo images
+!static/images/
+!docs/images/
+
+# Sensitive data
+secrets/
+private/
+confidential/
+
+# Compiled translations
+*.mo
+
+# Local configuration
+local_settings.py
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Unit test / coverage reports
+cover/
+.nox/
+.coverage
+.coverage.*
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Local development
+dev/
+development/
